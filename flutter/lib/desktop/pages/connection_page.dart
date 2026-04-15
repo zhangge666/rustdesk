@@ -189,7 +189,16 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
 /// Connection page for connecting to a remote peer.
 class ConnectionPage extends StatefulWidget {
-  const ConnectionPage({Key? key}) : super(key: key);
+  const ConnectionPage({
+    Key? key,
+    this.showPeerTabs = true,
+    this.showOnlineStatus = true,
+    this.embedded = false,
+  }) : super(key: key);
+
+  final bool showPeerTabs;
+  final bool showOnlineStatus;
+  final bool embedded;
 
   @override
   State<ConnectionPage> createState() => _ConnectionPageState();
@@ -304,23 +313,28 @@ class _ConnectionPageState extends State<ConnectionPage>
   @override
   Widget build(BuildContext context) {
     final isOutgoingOnly = bind.isOutgoingOnly();
-    return Column(
+    final content = Column(
+      mainAxisSize: widget.showPeerTabs ? MainAxisSize.max : MainAxisSize.min,
       children: [
-        Expanded(
-            child: Column(
+        Row(
           children: [
-            Row(
-              children: [
-                Flexible(child: _buildRemoteIDTextField(context)),
-              ],
-            ).marginOnly(top: 22),
-            SizedBox(height: 12),
-            Divider().paddingOnly(right: 12),
-            Expanded(child: PeerTabPage()),
+            Flexible(child: _buildRemoteIDTextField(context)),
           ],
-        ).paddingOnly(left: 12.0)),
-        if (!isOutgoingOnly) const Divider(height: 1),
-        if (!isOutgoingOnly) OnlineStatusWidget()
+        ).marginOnly(top: widget.embedded ? 0 : 22),
+        if (widget.showPeerTabs) ...[
+          SizedBox(height: 12),
+          Divider().paddingOnly(right: 12),
+          Expanded(child: PeerTabPage()),
+        ],
+      ],
+    ).paddingOnly(left: widget.embedded ? 0 : 12.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showPeerTabs) Expanded(child: content) else content,
+        if (widget.showOnlineStatus && !isOutgoingOnly) const Divider(height: 1),
+        if (widget.showOnlineStatus && !isOutgoingOnly) OnlineStatusWidget()
       ],
     );
   }

@@ -9,20 +9,6 @@ env:
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "README.md"
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - ".github/**"
-      - "docs/**"
-      - "README.md"
-      - "res/**"
-      - "appimage/**"
-      - "flatpak/**"
 
 jobs:
   # ensure_cargo_fmt:
@@ -180,6 +166,30 @@ jobs:
         use-cross: ${{ matrix.job.use-cross }}
         command: build
         args: --locked --target=${{ matrix.job.target }}
+
+    - name: Collect build artifacts
+      shell: bash
+      run: |
+        mkdir -p artifacts
+        case "${{ runner.os }}" in
+          Windows) EXE_SUFFIX=".exe" ;;
+          *) EXE_SUFFIX="" ;;
+        esac
+        for bin in rustdesk service naming; do
+          src="target/${{ matrix.job.target }}/debug/${bin}${EXE_SUFFIX}"
+          if [ -f "$src" ]; then
+            cp "$src" artifacts/
+          fi
+        done
+        ls -la artifacts
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rustdesk-${{ matrix.job.target }}-debug
+        path: artifacts/
+        if-no-files-found: error
+        retention-days: 14
 
     - name: clean
       shell: bash

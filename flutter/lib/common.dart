@@ -251,16 +251,16 @@ class MyTheme {
   MyTheme._();
 
   static const Color grayBg = Color(0xFFEFEFF2);
-  static const Color accent = Color(0xFF0071FF);
-  static const Color accent50 = Color(0x770071FF);
-  static const Color accent80 = Color(0xAA0071FF);
+  static const Color accent = Color(0xFF1FA866);
+  static const Color accent50 = Color(0x771FA866);
+  static const Color accent80 = Color(0xAA1FA866);
   static const Color canvasColor = Color(0xFF212121);
   static const Color border = Color(0xFFCCCCCC);
-  static const Color idColor = Color(0xFF00B6F0);
+  static const Color idColor = Color(0xFF2EC27E);
   static const Color darkGray = Color.fromARGB(255, 148, 148, 148);
   static const Color cmIdColor = Color(0xFF21790B);
   static const Color dark = Colors.black87;
-  static const Color button = Color(0xFF2C8CFF);
+  static const Color button = Color(0xFF1FA866);
   static const Color hoverBorder = Color(0xFF999999);
 
   // ListTile
@@ -454,7 +454,7 @@ class MyTheme {
         style:
             MenuStyle(backgroundColor: MaterialStatePropertyAll(Colors.white))),
     colorScheme: ColorScheme.light(
-        primary: Colors.blue, secondary: accent, background: grayBg),
+        primary: accent, secondary: accent, background: grayBg),
     popupMenuTheme: PopupMenuThemeData(
         color: Colors.white,
         shape: RoundedRectangleBorder(
@@ -562,7 +562,7 @@ class MyTheme {
         style: MenuStyle(
             backgroundColor: MaterialStatePropertyAll(Color(0xFF121212)))),
     colorScheme: ColorScheme.dark(
-      primary: Colors.blue,
+      primary: accent,
       secondary: accent,
       background: Color(0xFF24252B),
     ),
@@ -1141,7 +1141,7 @@ Widget createDialogContent(String text) {
     spans.add(TextSpan(
       text: match.group(0) ?? '',
       style: const TextStyle(
-        color: Colors.blue,
+        color: MyTheme.accent,
         decoration: TextDecoration.underline,
       ),
       recognizer: TapGestureRecognizer()
@@ -1270,7 +1270,7 @@ Color? _msgboxColor(String type) {
   if (type.contains("error") || type == "re-input-password") {
     return Color(0xFFE04F5F);
   }
-  return Color(0xFF2C8CFF);
+  return MyTheme.button;
 }
 
 Widget msgboxIcon(String type) {
@@ -3700,14 +3700,20 @@ Widget loadLogo() {
 }
 
 Widget loadIcon(double size) {
-  return Image.asset('assets/icon.png',
+  return SvgPicture.asset(
+    'assets/icon.svg',
+    width: size,
+    height: size,
+    placeholderBuilder: (context) => Image.asset(
+      'assets/icon.png',
       width: size,
       height: size,
-      errorBuilder: (ctx, error, stackTrace) => SvgPicture.asset(
-            'assets/icon.svg',
-            width: size,
-            height: size,
-          ));
+      errorBuilder: (ctx, error, stackTrace) => SizedBox(
+        width: size,
+        height: size,
+      ),
+    ),
+  );
 }
 
 var imcomingOnlyHomeSize = Size(280, 300);

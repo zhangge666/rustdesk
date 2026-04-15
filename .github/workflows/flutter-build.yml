@@ -48,6 +48,8 @@ env:
   SIGN_BASE_URL: "${{ secrets.SIGN_BASE_URL }}-2"
 
 jobs:
+  # Custom fork optimization: keep only Windows desktop and Android x86_64 APK
+  # builds to reduce GitHub Actions usage.
   generate-bridge:
     uses: ./.github/workflows/bridge.yml
 
@@ -283,6 +285,7 @@ jobs:
 
   # The fallback for the flutter version, we use Sciter for 32bit Windows.
   build-for-windows-sciter:
+    if: ${{ false }}
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
     # Temporarily disable this action due to additional test is needed.
@@ -433,7 +436,7 @@ jobs:
             ./SignOutput/rustdesk-*.exe
 
   build-rustdesk-ios:
-    if: ${{ inputs.upload-artifact }}
+    if: ${{ false }}
     name: build rustdesk ios ipa
     runs-on: ${{ matrix.job.os }}
     needs: [generate-bridge]
@@ -553,6 +556,7 @@ jobs:
 
 
   build-for-macOS:
+    if: ${{ false }}
     name: ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     needs: [generate-bridge]
@@ -771,6 +775,7 @@ jobs:
             rustdesk*-${{ matrix.job.arch }}.dmg
 
   publish_unsigned:
+    if: ${{ false }}
     needs:
       - build-for-macOS
       - build-for-windows-flutter
@@ -821,20 +826,6 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - {
-              arch: aarch64,
-              target: aarch64-linux-android,
-              os: ubuntu-24.04,
-              reltype: release,
-              suffix: "",
-            }
-          - {
-              arch: armv7,
-              target: armv7-linux-androideabi,
-              os: ubuntu-24.04,
-              reltype: release,
-              suffix: "",
-            }
           - {
               arch: x86_64,
               target: x86_64-linux-android,
@@ -1001,6 +992,7 @@ jobs:
           esac
 
       - name: Upload Rustdesk library to Artifacts
+        if: ${{ false }}
         uses: actions/upload-artifact@master
         with:
           name: librustdesk.so.${{ matrix.job.target }}
@@ -1106,9 +1098,9 @@ jobs:
             signed-apk/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
 
   build-rustdesk-android-universal:
+    if: ${{ false }}
     needs: [build-rustdesk-android]
     name: build rustdesk android universal apk
-    if: ${{ inputs.upload-artifact }}
     runs-on: ubuntu-24.04
     env:
       reltype: release
@@ -1290,6 +1282,7 @@ jobs:
             signed-apk/rustdesk-${{ env.VERSION }}-universal${{ env.suffix }}.apk
 
   build-rustdesk-linux:
+    if: ${{ false }}
     needs: [generate-bridge]
     name: build rustdesk linux ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.on }}
@@ -1627,7 +1620,7 @@ jobs:
             res/rustdesk-${{ env.VERSION }}*.zst
 
   build-rustdesk-linux-sciter:
-    if: ${{ inputs.upload-artifact }}
+    if: ${{ false }}
     runs-on: ${{ matrix.job.on }}
     name: build-rustdesk-linux-sciter ${{ matrix.job.target }}
     strategy:
@@ -1854,10 +1847,10 @@ jobs:
           path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
 
   build-appimage:
+    if: ${{ false }}
     name: Build appimage ${{ matrix.job.target }}
     needs: [build-rustdesk-linux]
     runs-on: ubuntu-22.04
-    if: ${{ inputs.upload-artifact }}
     strategy:
       fail-fast: false
       matrix:
@@ -1904,12 +1897,12 @@ jobs:
             ./appimage/rustdesk-${{ env.VERSION }}-*.AppImage
 
   build-flatpak:
+    if: ${{ false }}
     name: Build flatpak ${{ matrix.job.target }}${{ matrix.job.suffix }}
     needs:
       - build-rustdesk-linux
       - build-rustdesk-linux-sciter
     runs-on: ${{ matrix.job.on }}
-    if: ${{ inputs.upload-artifact }}
     strategy:
       fail-fast: false
       matrix:

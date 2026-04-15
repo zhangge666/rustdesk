@@ -60,15 +60,19 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    final useMergedWindowsLayout = isWindows && !isIncomingOnly;
     return _buildBlock(
-        child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        buildLeftPane(context),
-        if (!isIncomingOnly) const VerticalDivider(width: 1),
-        if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
-      ],
-    ));
+      child: useMergedWindowsLayout
+          ? buildLeftPane(context, expanded: true)
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                buildLeftPane(context),
+                if (!isIncomingOnly) const VerticalDivider(width: 1),
+                if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
+              ],
+            ),
+    );
   }
 
   Widget _buildBlock({required Widget child}) {
@@ -76,9 +80,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         block: _block, mask: true, use: canBeBlocked, child: child);
   }
 
-  Widget buildLeftPane(BuildContext context) {
+  Widget buildLeftPane(BuildContext context, {bool expanded = false}) {
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
+    final useMergedWindowsLayout = expanded && isWindows && !isIncomingOnly;
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
       if (bind.isCustomClient())
@@ -93,6 +98,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
+      if (useMergedWindowsLayout) buildWindowsRemoteConnect(context),
+      if (useMergedWindowsLayout)
+        OnlineStatusWidget().marginOnly(left: 20, right: 16, top: 4, bottom: 8),
       FutureBuilder<Widget>(
         future: Future.value(
             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
@@ -128,10 +136,26 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ]);
     }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    final scrollChild = expanded
+        ? Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Column(
+                key: _childKey,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
+            ),
+          )
+        : Column(
+            key: _childKey,
+            children: children,
+          );
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
+        width: expanded ? null : (isIncomingOnly ? 280.0 : 200.0),
         color: Theme.of(context).colorScheme.background,
         child: Stack(
           children: [
@@ -139,15 +163,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               children: [
                 SingleChildScrollView(
                   controller: _leftPaneScrollController,
-                  child: Column(
-                    key: _childKey,
-                    children: children,
-                  ),
+                  child: scrollChild,
                 ),
                 Expanded(child: Container())
               ],
             ),
-            if (isOutgoingOnly)
+            if (isOutgoingOnly && !isWindows)
               Positioned(
                 bottom: 6,
                 left: 12,
@@ -184,6 +205,17 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: ConnectionPage(),
+    );
+  }
+
+  Widget buildWindowsRemoteConnect(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 16, 16, 12),
+      child: const ConnectionPage(
+        showPeerTabs: false,
+        showOnlineStatus: false,
+        embedded: true,
+      ),
     );
   }
 
@@ -256,6 +288,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget buildPopupMenu(BuildContext context) {
+    if (isWindows) {
+      return const SizedBox.shrink();
+    }
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
     RxBool hover = false.obs;
     return InkWell(
@@ -430,6 +465,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget buildHelpCards(String updateUrl) {
+    if (systemError.isNotEmpty) {
+      return buildInstallCard("", systemError, "", () {});
+    }
+    if (isWindows) {
+      return const SizedBox.shrink();
+    }
     if (!bind.isCustomClient() &&
         updateUrl.isNotEmpty &&
         !isCardClosed &&
@@ -456,27 +497,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               ? 'https://github.com/rustdesk/rustdesk/releases/tag/${bind.mainGetNewVersion()}'
               : null);
     }
-    if (systemError.isNotEmpty) {
-      return buildInstallCard("", systemError, "", () {});
-    }
-
-    if (isWindows && !bind.isDisableInstallation()) {
-      if (!bind.mainIsInstalled()) {
-        return buildInstallCard(
-            "", bind.isOutgoingOnly() ? "" : "install_tip", "Install",
-            () async {
-          await rustDeskWinManager.closeAllSubWindows();
-          bind.mainGotoInstall();
-        });
-      } else if (bind.mainIsInstalledLowerVersion()) {
-        return buildInstallCard(
-            "Status", "Your installation is lower version.", "Click to upgrade",
-            () async {
-          await rustDeskWinManager.closeAllSubWindows();
-          bind.mainUpdateMe();
-        });
-      }
-    } else if (isMacOS) {
+    if (isMacOS) {
       final isOutgoingOnly = bind.isOutgoingOnly();
       if (!(isOutgoingOnly || bind.mainIsCanScreenRecording(prompt: false))) {
         return buildInstallCard("Permissions", "config_screen", "Configure",

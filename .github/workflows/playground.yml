@@ -221,6 +221,14 @@ jobs:
               mv "$name" "${name%%.dmg}-${{ matrix.job.arch }}-flutter${{ matrix.job.flutter }}-flutter${{ matrix.job.date }}.dmg"
           done
 
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-playground-${{ matrix.job.arch }}-flutter${{ matrix.job.flutter }}-${{ matrix.job.date }}-dmg
+          path: rustdesk*-${{ matrix.job.arch }}*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Publish DMG package
         uses: softprops/action-gh-release@v1
         with:
@@ -408,6 +416,16 @@ jobs:
         env:
           # override default build-tools version (29.0.3) -- optional
           BUILD_TOOLS_VERSION: "30.0.2"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-playground-${{ matrix.job.arch }}-apk
+          path: |
+            signed-apk/*.apk
+            ${{ steps.sign-rustdesk.outputs.signedReleaseFile }}
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Publish signed apk package
         uses: softprops/action-gh-release@v1
