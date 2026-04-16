@@ -12,6 +12,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
+import 'package:flutter_hbb/desktop/widgets/tabbar_widget.dart';
 import 'package:flutter_hbb/desktop/widgets/update_progress.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
@@ -50,6 +51,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   var watchIsCanRecordAudio = false;
   Timer? _updateTimer;
   bool isCardClosed = false;
+  bool _didAdjustCompactWindowsHomeSize = false;
 
   final RxBool _editHover = false.obs;
   final RxBool _block = false.obs;
@@ -877,8 +879,31 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _updateWindowSize();
       });
+    } else if (isWindows && !bind.isOutgoingOnly()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _adjustCompactWindowsHomeSize();
+      });
     }
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  Future<void> _adjustCompactWindowsHomeSize() async {
+    if (_didAdjustCompactWindowsHomeSize || !mounted || !isInHomePage()) {
+      return;
+    }
+    final controller = Get.find<DesktopTabController>();
+    if (controller.length != 1 || await windowManager.isMaximized()) {
+      _didAdjustCompactWindowsHomeSize = true;
+      return;
+    }
+    final currentSize = await windowManager.getSize();
+    final targetSize = getCompactWindowsHomeSize();
+    final shouldShrink = currentSize.width > targetSize.width + 80 ||
+        currentSize.height > targetSize.height + 80;
+    if (shouldShrink) {
+      await windowManager.setSize(targetSize);
+    }
+    _didAdjustCompactWindowsHomeSize = true;
   }
 
   _updateWindowSize() {

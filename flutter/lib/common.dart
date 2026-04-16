@@ -1883,18 +1883,25 @@ Future _saveSessionWindowPosition(WindowType windowType, int windowId,
   }
 }
 
-Future<Size> _adjustRestoreMainWindowSize(double? width, double? height) async {
+Future<Size> _adjustRestoreWindowSize(
+    WindowType type, double? width, double? height) async {
   const double minWidth = 1;
   const double minHeight = 1;
   const double maxWidth = 6480;
   const double maxHeight = 6480;
 
-  final defaultWidth =
-      ((isDesktop || isWebDesktop) ? 1280 : kMobileDefaultDisplayWidth)
-          .toDouble();
-  final defaultHeight =
-      ((isDesktop || isWebDesktop) ? 720 : kMobileDefaultDisplayHeight)
-          .toDouble();
+  final isCompactWindowsMainWindow =
+      type == WindowType.Main && useCompactWindowsHomeSize();
+  final defaultSize = isCompactWindowsMainWindow
+      ? getCompactWindowsHomeSize()
+      : Size(
+          ((isDesktop || isWebDesktop) ? 1280 : kMobileDefaultDisplayWidth)
+              .toDouble(),
+          ((isDesktop || isWebDesktop) ? 720 : kMobileDefaultDisplayHeight)
+              .toDouble(),
+        );
+  final defaultWidth = defaultSize.width;
+  final defaultHeight = defaultSize.height;
   double restoreWidth = width ?? defaultWidth;
   double restoreHeight = height ?? defaultHeight;
 
@@ -1908,6 +1915,11 @@ Future<Size> _adjustRestoreMainWindowSize(double? width, double? height) async {
     restoreWidth = defaultWidth;
   }
   if (restoreHeight > maxHeight) {
+    restoreHeight = defaultHeight;
+  }
+  if (isCompactWindowsMainWindow &&
+      isLegacyWindowsHomeSize(restoreWidth, restoreHeight)) {
+    restoreWidth = defaultWidth;
     restoreHeight = defaultHeight;
   }
   return Size(restoreWidth, restoreHeight);
@@ -2047,7 +2059,7 @@ Future<bool> restoreWindowPosition(WindowType type,
     }
   }
 
-  final size = await _adjustRestoreMainWindowSize(lpos.width, lpos.height);
+  final size = await _adjustRestoreWindowSize(type, lpos.width, lpos.height);
   final offsetLeftTop = await _adjustRestoreMainWindowOffset(
     lpos.offsetWidth,
     lpos.offsetHeight,
@@ -3722,6 +3734,23 @@ Size getIncomingOnlyHomeSize() {
   final magicHeight = 10.0;
   return imcomingOnlyHomeSize +
       Offset(magicWidth, kDesktopRemoteTabBarHeight + magicHeight);
+}
+
+const Size _compactWindowsHomeSize = Size(1024, 720);
+
+bool useCompactWindowsHomeSize() {
+  return isWindows && !bind.isIncomingOnly() && !bind.isOutgoingOnly();
+}
+
+Size getCompactWindowsHomeSize() {
+  return _compactWindowsHomeSize;
+}
+
+bool isLegacyWindowsHomeSize(double width, double height) {
+  const legacyWidth = 1280.0;
+  const legacyHeight = 720.0;
+  return (width - legacyWidth).abs() < 1.0 &&
+      (height - legacyHeight).abs() < 1.0;
 }
 
 Size getIncomingOnlySettingsSize() {
